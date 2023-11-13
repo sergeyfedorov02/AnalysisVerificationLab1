@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
-using AnalysisVerificationLab1.IfBlocksParser;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -602,7 +601,7 @@ namespace AnalysisVerificationLab1
             var whileLabelsDictionary = CreateForWhileLabelsDictionary(result, newLinesDictionary, false);
 
             // Delete Block from If with letters "Block", "else"
-            var resultAfterDelIfBlocks = IfParser2.DeleteIfBlocks(result, newLinesDictionary, ifLabelsDictionary);
+            var resultAfterDelIfBlocks = DeleteIfBlocks(result, newLinesDictionary, ifLabelsDictionary);
             result = resultAfterDelIfBlocks;
 
             // Delete Block from For with letters "Block"
@@ -1039,6 +1038,109 @@ namespace AnalysisVerificationLab1
                         }
                     }
                 }
+            }
+
+            return result;
+        }
+        
+        // Delete Block from If with letters "Block", "else"
+        private static Dictionary<int, List<int>> DeleteIfBlocks(Dictionary<int, List<int>> connections,
+            Dictionary<int, string> linesDictionary, Dictionary<KeyValuePair<int, int>, string> labelsDictionary)
+        {
+            var result = new Dictionary<int, List<int>>(connections);
+            var ifDictionary = new Dictionary<int, List<int>>();
+
+            foreach (var (key, value) in linesDictionary)
+            {
+                if (value.Length > 3 && value[..3].Equals("if "))
+                {
+                    ifDictionary[key] = connections[key];
+                }
+            }
+
+            var valuesToDeleteThen = new Dictionary<int, int>();
+            var valuesToAddThen = new Dictionary<int, int>();
+
+            var valuesToDeleteElse = new List<KeyValuePair<int, int>>();
+            var valuesToAddElse = new Dictionary<int, int>();
+
+            foreach (var (key, values) in ifDictionary)
+            {
+                foreach (var value in values)
+                {
+                    var curValue = linesDictionary[value];
+                    switch (curValue.Length)
+                    {
+                        case 5 when curValue.Equals("Block"):
+                        {
+                            var nextNode = result[value][0];
+                            valuesToAddThen[key] = nextNode;
+                            valuesToDeleteThen[key] = value;
+                            break;
+                        }
+                        case 4 when curValue.Equals("else"):
+                        {
+                            var nextBlock = result[value][0];
+                            var first = new KeyValuePair<int, int>(key, value);
+
+                            var nextNode = result[nextBlock][0];
+                            valuesToAddElse[key] = nextNode;
+                            var second = new KeyValuePair<int, int>(value, nextBlock);
+
+                            valuesToDeleteElse.Add(first);
+                            valuesToDeleteElse.Add(second);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            foreach (var (key, value) in valuesToAddThen)
+            {
+                result[key].Add(value);
+            }
+
+            foreach (var (key, value) in valuesToDeleteThen)
+            {
+                var curPair = new KeyValuePair<int, int>(key, value);
+                var tryGetValuePair = labelsDictionary.TryGetValue(curPair, out string stringValue);
+                if (tryGetValuePair)
+                {
+                    var newValue = valuesToAddThen.SingleOrDefault(x => x.Key == key);
+                    labelsDictionary.Remove(curPair);
+                    labelsDictionary[newValue] = stringValue;
+                }
+
+                result.Remove(value);
+                result.SingleOrDefault(x => x.Key == key).Value.Remove(value);
+                linesDictionary.Remove(value);
+            }
+
+            foreach (var (key, value) in valuesToAddElse)
+            {
+                result[key].Add(value);
+            }
+
+            for (var i = 0; i < valuesToDeleteElse.Count; i += 2)
+            {
+                var curValueFirst = valuesToDeleteElse[i];
+                var curValueSecond = valuesToDeleteElse[i + 1];
+
+                var curPair = new KeyValuePair<int, int>(curValueFirst.Key, curValueFirst.Value);
+                var tryGetValuePair = labelsDictionary.TryGetValue(curPair, out string stringValue);
+                if (tryGetValuePair)
+                {
+                    var newValue = valuesToAddElse.SingleOrDefault(x => x.Key == curValueFirst.Key);
+                    labelsDictionary.Remove(curPair);
+                    labelsDictionary[newValue] = stringValue;
+                }
+
+                result.Remove(curValueFirst.Value);
+                result.SingleOrDefault(x => x.Key == curValueFirst.Key).Value.Remove(curValueFirst.Value);
+                linesDictionary.Remove(curValueFirst.Value);
+
+                result.Remove(curValueSecond.Value);
+                linesDictionary.Remove(curValueSecond.Value);
             }
 
             return result;

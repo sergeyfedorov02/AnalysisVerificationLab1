@@ -4,11 +4,44 @@ namespace AnalysisVerificationLab1.TestsClasses
 {
     public class ClassTest
     {
+        private static int TestContinue(int x, int y)
+        {
+            var c = 10;
+            c++;
+            int a = 5;
+            var b = "str";
+
+            for (var k = 0; k < a; k++)
+            {
+                for (int i = 1; i < c; i++)
+                {
+                    if (c != a)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        if (c == a)
+                        {
+                            break;
+                        }
+
+                        c++;
+                    }
+
+                    c--;
+                }
+            }
+
+            var result = c;
+            return result;
+        }
+
         private static int Test1()
         {
             Dictionary<int, string> myDictionary = new Dictionary<int, string>();
             List<string> myList = new List<string>();
-            var c = 100 + 10;
+            var c = 110;
             int a = 5;
             string xc = "ff";
             a += 4;
@@ -685,6 +718,39 @@ namespace AnalysisVerificationLab1.TestsClasses
 
                 c += 10;
             }
+
+            var result = c;
+            return result;
+        }
+
+        private static int Test23(int x, int y)
+        {
+            var c = 10;
+            c++;
+            int a = 5;
+            var b = "str";
+
+            for (var k = 0; k < a; k++)
+            {
+                if (k > a)
+                {
+                    break;
+                }
+                else
+                {
+                    if (k < c)
+                    {
+                        c++;
+                    }
+                    else
+                    {
+                        c--;
+                    }
+                }
+
+                return a;
+            }
+
 
             var result = c;
             return result;
